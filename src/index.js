@@ -19,6 +19,7 @@ class ExportEnv {
 	constructor(serverless, options) {
 		this.serverless = serverless;
 		this.options = options;
+		this.params = this.serverless.service.custom["export-env"] || {};
 
 		this.commands = {
 			"export-env": {
@@ -37,6 +38,13 @@ class ExportEnv {
 			"export-env:apply": this.applyEnvVars.bind(this),
 			"export-env:write": this.writeEnvVars.bind(this)
 		};
+
+		if (this.params.runAfterDeploy === true) {
+			this.hooks = Object.assign(this.hooks, {
+				"after:deploy:deploy": () =>
+					this.serverless.pluginManager.run(["export-env"])
+			});
+		}
 
 		this.environmentVariables = {};
 		this.envFileName = ".env";
@@ -103,14 +111,14 @@ class ExportEnv {
 		return BbPromise.try(() => {
 			process.env.SLS_DEBUG && this.serverless.cli.log("Writing .env file");
 
-			const params = this.serverless.service.custom["export-env"];
-
 			let filename = this.envFileName;
 			let pathFromRoot = "";
 
-			if (params != null) {
-				if (params.filename != null) filename = params.filename;
-				if (params.pathFromRoot != null) pathFromRoot = params.pathFromRoot;
+			if (this.params.filename != null) {
+				filename = this.params.filename;
+			}
+			if (this.params.pathFromRoot != null) {
+				pathFromRoot = this.params.pathFromRoot;
 			}
 
 			const envFilePath = path.resolve(
