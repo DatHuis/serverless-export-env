@@ -41,8 +41,13 @@ class ExportEnv {
 
 		if (this.params.runAfterDeploy === true) {
 			this.hooks = Object.assign(this.hooks, {
-				"after:deploy:deploy": () =>
-					this.serverless.pluginManager.run(["export-env"])
+				"after:deploy:deploy": () => {
+					return Promise.resolve()
+						.then(() => this.collectEnvVars())
+						.then(() => this.resolveEnvVars())
+						.then(() => this.applyEnvVars())
+						.then(() => this.writeEnvVars());
+				}
 			});
 		}
 
